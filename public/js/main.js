@@ -1,8 +1,68 @@
 // Theme Toggle Logic
 document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".tech-card-grid").forEach(cardGrid => {
+        const cards = Array.from(cardGrid.children);
+        const duplicateCards = document.createDocumentFragment();
+
+        cards.forEach(card => {
+            const clone = card.cloneNode(true);
+            clone.setAttribute("aria-hidden", "true");
+            duplicateCards.appendChild(clone);
+        });
+
+        cardGrid.appendChild(duplicateCards);
+    });
+
+    const contactForm = document.querySelector("#contact-form");
+    const contactNotification = document.querySelector("#contact-notification");
+
+    if (contactForm && contactNotification) {
+        let notificationTimeout;
+
+        contactForm.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const submitButton = contactForm.querySelector('button[type="submit"]');
+            const originalButtonContent = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.textContent = "Sending...";
+
+            try {
+                const response = await fetch(contactForm.action, {
+                    method: "POST",
+                    body: new FormData(contactForm),
+                    headers: { Accept: "application/json" }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Contact form request failed with status ${response.status}`);
+                }
+
+                contactForm.reset();
+                contactNotification.textContent = "Message sent successfully!";
+                contactNotification.className = "alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 w-100 shadow";
+            } catch (error) {
+                console.error("Could not send contact form:", error);
+                contactNotification.textContent = "Message could not be sent. Please try again.";
+                contactNotification.className = "alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3 w-100 shadow";
+            } finally {
+                contactNotification.style.maxWidth = "520px";
+                contactNotification.style.zIndex = "1090";
+                contactNotification.setAttribute("role", "alert");
+                contactNotification.setAttribute("aria-live", "assertive");
+                window.clearTimeout(notificationTimeout);
+                notificationTimeout = window.setTimeout(() => {
+                    contactNotification.classList.add("d-none");
+                }, 5000);
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+            }
+        });
+    }
+
     const typewriter = document.querySelector(".typewriter-text");
     const roles = [
-        "Full Stack Developer",
+        "MERN Stack Developer",
         "Web Developer",
         "Creative Designer",
         "Digital Creator"
@@ -42,11 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Check local storage for theme
     const currentTheme = localStorage.getItem("theme");
-    if (currentTheme) {
-        body.classList.add(currentTheme);
-    } else {
-        body.classList.add("dark-theme");
-    }
+    body.classList.remove("dark-theme", "light-theme");
+    body.classList.add(currentTheme === "light-theme" ? "light-theme" : "dark-theme");
 
     // Update button text/icon initially
     updateIcons(body.classList.contains("dark-theme"));
